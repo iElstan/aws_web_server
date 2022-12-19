@@ -1,6 +1,3 @@
-#------------------------------------------------
-# --------------- VPC Module --------------------
-#------------------------------------------------
 
 # VPC creation
 resource "aws_vpc" "vpc_for_web" {
@@ -50,20 +47,18 @@ resource "aws_route_table_association" "public_subnet_association" {
 
 # NAT Gateway creation
 resource "aws_eip" "elastic_ip" {
-  count = length(var.private_subnet_cidrs)
   vpc = true
   tags = {
-    Name = "Elastic-IP-${count.index + 1}"
+    Name = "Elastic-IP-for-WebServer"
   }
 }
 
 resource "aws_nat_gateway" "nat_gw" {
-  count = length(var.private_subnet_cidrs)
-  allocation_id = element(aws_eip.elastic_ip[*].id, count.index)
-  subnet_id = element(aws_subnet.private_subnets[*].id, count.index)
+  allocation_id = aws_eip.elastic_ip.id
+  subnet_id = aws_subnet.public_subnets[0].id
   depends_on = [aws_internet_gateway.igw_for_webserver]
   tags = {
-    Name = "NAT-GW-${count.index + 1}"
+    Name = "NAT-GW-for-WebServer"
   }
 }
 
@@ -80,19 +75,18 @@ resource "aws_subnet" "private_subnets" {
 
 # Private route table creation
 resource "aws_route_table" "private_route_table" {
-  count = length(aws_subnet.private_subnets)
   vpc_id = aws_vpc.vpc_for_web.id
   route {
   cidr_block = "0.0.0.0/0"
-  gateway_id = aws_nat_gateway.nat_gw[count.index].id
+  gateway_id = aws_nat_gateway.nat_gw.id
   }
   tags = {
-    Name = "${count.index + 1}-Route-table-for-private-subnets"
+    Name = "Route-table-for-private-subnets"
   }
 }
 
 resource "aws_route_table_association" "private_subnet_association" {
   count = length(aws_route_table.private_route_table)
   subnet_id = element(aws_subnet.private_subnets[*].id, count.index )
-  route_table_id = element(aws_route_table.private_route_table[*].id, count.index)
+  route_table_id = aws_route_table.private_route_table.id
 }
