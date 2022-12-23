@@ -1,0 +1,49 @@
+- name: Docker and docker-compose install
+  hosts: all
+  become: True
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+  - name: Docker install
+    shell: amazon-linux-extras install docker -y
+
+  - name: Pip install
+    shell: yum install python3-pip
+
+  - name: boto and docker-compose install
+    pip:
+      name: ['boto3', 'botocore', 'docker-compose']
+
+  - name: Docker start
+    service: name=docker state=started enabled=yes
+
+  - name: Docker user access
+    shell: usermod -a -G docker ec2-user
+
+  - name: ECR login
+    shell: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 294360715377.dkr.ecr.us-east-1.amazonaws.com
+
+  - name: Nginx image pull
+    shell: docker pull 294360715377.dkr.ecr.us-east-1.amazonaws.com/webserver:nginx
+
+  - name: Wordpress image pull
+    shell: docker pull 294360715377.dkr.ecr.us-east-1.amazonaws.com/webserver:wordpress
+
+  - name: Copy compose.yaml
+    copy: src=./compose.yaml dest="/home/ec2-user"
+
+  - name: Сreate directory for static content
+    file: path=/home/ec2-user/static state=directory
+
+  - name: Copy static content
+    copy: src={{ item }} dest="/home/ec2-user/static/{{ item }}"
+    loop:
+      - ./index.html
+      - ./style.css
+      - ./petyshok.jpg
+
+  - name: Docker-compose up
+    docker_compose:
+      project_src: /home/ec2-user
+      state: present

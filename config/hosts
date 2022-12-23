@@ -1,0 +1,8 @@
+[INSTANCES]
+
+EC2-Webserver-1         ansible_host=10.0.3.7
+EC2-Webserver-2         ansible_host=10.0.4.7
+
+[INSTANCES:vars]
+ansible_user = ec2-user
+ansible_ssh_private_key = /home/ec2-user/.ssh/id_rsa
