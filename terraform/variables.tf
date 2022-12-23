@@ -82,5 +82,5 @@ variable "s3name" {
 }
 
 variable "config_link" {
-  default = "/home/roman/webserver/config"
+  default = "../config"
 }
